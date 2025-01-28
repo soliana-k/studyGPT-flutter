@@ -32,7 +32,7 @@ class StudyGPTHome extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Welcome, John",
+              "Welcome, Kalkidan",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
@@ -43,16 +43,14 @@ class StudyGPTHome extends StatelessWidget {
                 color: Colors.blue[50],
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Text(
-                      "Schedule learning time\n\nLorem ipsum dolor sit amet consectetur. Suspendisse integer nibh volutpat quis pulvinar.",
-                      style: TextStyle(fontSize: 14),
-                    ),
+                  Text(
+                    "Schedule learning time\n\nLorem ipsum dolor sit amet consectetur. Suspendisse integer nibh volutpat quis pulvinar.",
+                    style: TextStyle(fontSize: 14),
                   ),
-                  Column(
+                  Row(
                     children: [
                       ElevatedButton(
                         onPressed: () {},
