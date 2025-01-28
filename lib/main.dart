@@ -93,7 +93,7 @@ class StudyGPTHome extends StatelessWidget {
 
 Widget _buildScheduleCard() {
   return Card(
-    color: Colors.blue[50],
+    color: Color.fromRGBO(248, 249, 250, 1),
     child: Padding(
       padding: EdgeInsets.all(12.0),
       child: Column(
@@ -101,7 +101,7 @@ Widget _buildScheduleCard() {
         children: [
           Row(
             children: [
-              Icon(Icons.calendar_today, color: Colors.blue),
+              Icon(Icons.calendar_month_outlined, color: Colors.grey),
               SizedBox(width: 10),
               Text("Schedule learning time", style: TextStyle(fontWeight: FontWeight.bold)),
             ],
