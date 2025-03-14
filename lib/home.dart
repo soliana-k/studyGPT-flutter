@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -33,6 +33,13 @@ class PDFReaderPage extends StatefulWidget {
 
 class _PDFReaderPageState extends State<PDFReaderPage> {
   String? localPath;
+  final FlutterTts flutterTts = FlutterTts();
+  final GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
+  final PdfViewerController _pdfViewerController = PdfViewerController();
+  int currentPage = 1;
+  Set<int> bookmarkedPages = {};
+  PdfDocument? pdfDocument;
+  List<Map<String, dynamic>> chapters = [];
 
   @override
   void initState() {
@@ -45,24 +52,81 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
     final file = File('${(await getTemporaryDirectory()).path}/chem.pdf');
     await file.writeAsBytes(byteData.buffer.asUint8List());
 
+    pdfDocument = PdfDocument(inputBytes: byteData.buffer.asUint8List());
+
     setState(() {
       localPath = file.path;
     });
+
+    extractChapters();
+  }
+
+  void extractChapters() {
+    chapters.clear();
+    if (pdfDocument == null) return;
+
+    for (int i = 0; i < pdfDocument!.pages.count; i++) {
+      final text = PdfTextExtractor(pdfDocument!).extractText(startPageIndex: i, endPageIndex: i);
+      if (text != null && text.toLowerCase().contains('unit')) {
+        final unitTitle = text.split('\n').firstWhere((line) => line.toLowerCase().contains('unit'), orElse: () => 'Unit ${i + 1}');
+        chapters.add({'title': unitTitle, 'page': i + 1});
+      }
+    }
+
+    if (chapters.isEmpty) {
+      debugPrint("No chapters detected.");
+    } else {
+      debugPrint("Chapters detected: \$chapters");
+    }
+  }
+
+  Future<void> _startTextToSpeech() async {
+    if (pdfDocument != null && pdfDocument!.pages.count >= currentPage) {
+      final pageText = PdfTextExtractor(pdfDocument!).extractText(startPageIndex: currentPage - 1, endPageIndex: currentPage - 1);
+      if (pageText != null && pageText.isNotEmpty) {
+        await flutterTts.speak(pageText);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("No text found on this page.")));
+      }
+    }
   }
 
   void _showChapters() {
-    // Placeholder for chapter view
+    if (chapters.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No chapters found.")));
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
-      builder: (_) => const Center(child: Text("Chapters List Placeholder")),
+      builder: (_) => ListView.builder(
+        itemCount: chapters.length,
+        itemBuilder: (context, index) => ListTile(
+          title: Text(chapters[index]['title']),
+          onTap: () {
+            _pdfViewerController.jumpToPage(chapters[index]['page']);
+            Navigator.pop(context);
+          },
+        ),
+      ),
     );
   }
 
   void _openSettings() {
-    // Placeholder for settings
     showDialog(
       context: context,
-      builder: (_) => const AlertDialog(title: Text("Settings Placeholder")),
+      builder: (_) => AlertDialog(
+        title: const Text("Settings"),
+        content: ElevatedButton(
+          onPressed: () {
+            flutterTts.stop();
+            Navigator.pop(context);
+          },
+          child: const Text("Reset TTS"),
+        ),
+      ),
     );
   }
 
@@ -70,16 +134,19 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
     showMenu(
       context: context,
       position: const RelativeRect.fromLTRB(100, 100, 0, 0),
-      items: [
-        const PopupMenuItem<int>(value: 0, child: Text("Option 1")),
-        const PopupMenuItem<int>(value: 1, child: Text("Option 2")),
+      items: const [
+        PopupMenuItem<int>(value: 0, child: Text("Option 1")),
+        PopupMenuItem<int>(value: 1, child: Text("Option 2")),
       ],
     );
   }
 
-  void _startTextToSpeech() {
-    // Placeholder for text-to-speech functionality
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Text-to-Speech started")));
+  void _bookmarkPage() {
+    setState(() {
+      bookmarkedPages.add(currentPage);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Page bookmarked.")));
   }
 
   @override
@@ -124,31 +191,41 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
               ),
               child: SfPdfViewer.file(
                 File(localPath!),
+                key: _pdfViewerKey,
+                controller: _pdfViewerController,
                 enableTextSelection: true,
+                onPageChanged: (details) {
+                  setState(() {
+                    currentPage = _pdfViewerController.pageNumber;
+                  });
+                },
               ),
             ),
           ),
-
           BottomNavigationBar(
             backgroundColor: Colors.white,
             selectedItemColor: Colors.deepOrange,
             unselectedItemColor: Colors.grey,
-            items: const [
-              BottomNavigationBarItem(
+            items: [
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.home),
                 label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.bookmark),
+                icon: Icon(Icons.bookmark,
+                    color: bookmarkedPages.contains(currentPage)
+                        ? Colors.deepOrange
+                        : Colors.grey),
                 label: 'Bookmark',
               ),
-
             ],
+            onTap: (index) {
+              if (index == 1) _bookmarkPage();
+            },
           ),
         ],
       )
           : const Center(child: CircularProgressIndicator()),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue,
         child: const Icon(Icons.chat),
