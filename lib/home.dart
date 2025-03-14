@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
@@ -42,12 +42,44 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
 
   Future<void> loadPDF() async {
     final byteData = await rootBundle.load('assets/pdf/chem.pdf');
-    final file = File('${(await getTemporaryDirectory()).path}/sample.pdf');
+    final file = File('${(await getTemporaryDirectory()).path}/chem.pdf');
     await file.writeAsBytes(byteData.buffer.asUint8List());
 
     setState(() {
       localPath = file.path;
     });
+  }
+
+  void _showChapters() {
+    // Placeholder for chapter view
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => const Center(child: Text("Chapters List Placeholder")),
+    );
+  }
+
+  void _openSettings() {
+    // Placeholder for settings
+    showDialog(
+      context: context,
+      builder: (_) => const AlertDialog(title: Text("Settings Placeholder")),
+    );
+  }
+
+  void _showOptions() {
+    showMenu(
+      context: context,
+      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
+      items: [
+        const PopupMenuItem<int>(value: 0, child: Text("Option 1")),
+        const PopupMenuItem<int>(value: 1, child: Text("Option 2")),
+      ],
+    );
+  }
+
+  void _startTextToSpeech() {
+    // Placeholder for text-to-speech functionality
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Text-to-Speech started")));
   }
 
   @override
@@ -57,13 +89,25 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Chemistry Grade 9', style: TextStyle(color: Colors.white)),
+        title: const Text('Some Book Grade 9', style: TextStyle(color: Colors.white)),
         centerTitle: true,
-        actions: const [
-          Icon(Icons.volume_up, color: Colors.white),
-          SizedBox(width: 16),
-          Icon(Icons.more_vert, color: Colors.white),
-          SizedBox(width: 8),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.volume_up, color: Colors.white),
+            onPressed: _startTextToSpeech,
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu_book, color: Colors.white),
+            onPressed: _showChapters,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: _openSettings,
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onPressed: _showOptions,
+          ),
         ],
       ),
       body: localPath != null
@@ -78,11 +122,13 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
                   topRight: Radius.circular(24),
                 ),
               ),
-              child: PDFView(
-                filePath: localPath!,
+              child: SfPdfViewer.file(
+                File(localPath!),
+                enableTextSelection: true,
               ),
             ),
           ),
+
           BottomNavigationBar(
             backgroundColor: Colors.white,
             selectedItemColor: Colors.deepOrange,
@@ -90,24 +136,22 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.home),
-                label: '',
+                label: 'Home',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.bookmark),
-                label: '',
+                label: 'Bookmark',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.file_copy),
-                label: '',
-              ),
+
             ],
           ),
         ],
       )
           : const Center(child: CircularProgressIndicator()),
+
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.chat),
         onPressed: () {},
       ),
     );

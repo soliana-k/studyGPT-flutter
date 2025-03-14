@@ -40,8 +40,10 @@ dependencies:
   font_awesome_flutter: ^10.6.0
   flutter_svg: ^2.0.9
   flutter_pdfview: ^1.0.0
-  syncfusion_flutter_pdfviewer: ^21.1.35
+  # syncfusion_flutter_pdf: ^28.1.33
+  syncfusion_flutter_pdfviewer: ^20.1.58
   path_provider: ^2.0.0
+  flutter_tts: ^4.0.0
 
 dev_dependencies:
   flutter_test:
