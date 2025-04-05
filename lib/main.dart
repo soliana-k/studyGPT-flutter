@@ -3,9 +3,17 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:studygpt1/schedules.dart';
+import 'package:studygpt1/todo.dart';
 import 'home.dart';
+import 'firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main () async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(StudyGPTApp());
 }
 
@@ -74,13 +82,13 @@ class StudyGPTHome extends StatelessWidget {
         ListTile(
           title: Text('Profile'),
           onTap: () {
-            Navigator.pop(context); // Close the drawer
+            Navigator.push(context, MaterialPageRoute(builder: (context)=>TodoApp())); // Close the drawer
           },
         ),
         ListTile(
           title: Text('Settings'),
           onTap: () {
-            Navigator.pop(context); // Close the drawer
+            Navigator.push(context, MaterialPageRoute(builder: (context)=>ScheduleScreen())); // Close the drawer
           },
         )
           ],

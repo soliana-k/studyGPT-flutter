@@ -44,6 +44,15 @@ dependencies:
   syncfusion_flutter_pdfviewer: ^20.1.58
   path_provider: ^2.0.0
   flutter_tts: ^4.0.0
+  google_sign_in: ^6.1.5
+  cloud_firestore: ^4.9.0
+  firebase_core: ^2.15.0
+  googleapis: ^13.1.0
+  googleapis_auth: ^1.4.0
+  intl: ^0.18.1
+  table_calendar: ^3.0.9
+  firebase_auth: ^4.2.2
+
 
 dev_dependencies:
   flutter_test:
