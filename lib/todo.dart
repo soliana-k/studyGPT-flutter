@@ -128,6 +128,7 @@ class _TodoScreenState extends State<TodoScreen> {
       }
     }
   }
+
   void _showEditTaskDialog(int index) {
     String updatedTitle = _tasks[index]['title'];
     DateTime updatedDueDate = _tasks[index]['dueDate'];
@@ -165,51 +166,57 @@ class _TodoScreenState extends State<TodoScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Task'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Title input field
-            TextField(
-              controller: titleController,
-              autofocus: true,
-              onChanged: (value) => updatedTitle = value,
-              decoration: InputDecoration(hintText: 'Task title'),
+      builder: (context) =>
+          AlertDialog(
+            title: Text('Edit Task'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title input field
+                TextField(
+                  controller: titleController,
+                  autofocus: true,
+                  onChanged: (value) => updatedTitle = value,
+                  decoration: InputDecoration(hintText: 'Task title'),
+                ),
+                SizedBox(height: 20),
+                // DateTime Picker button
+                TextButton(
+                  onPressed: _pickDateTimeForEdit,
+                  child: Text('Pick Due Date and Time'),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Due Date: ${updatedDueDate.toLocal().toString().split(
+                      ' ')[0]} ${updatedDueDate.toLocal().toString().split(
+                      ' ')[1].split('.')[0]}',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ],
             ),
-            SizedBox(height: 20),
-            // DateTime Picker button
-            TextButton(
-              onPressed: _pickDateTimeForEdit,
-              child: Text('Pick Due Date and Time'),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Due Date: ${updatedDueDate.toLocal().toString().split(' ')[0]} ${updatedDueDate.toLocal().toString().split(' ')[1].split('.')[0]}',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (updatedTitle
+                      .trim()
+                      .isNotEmpty) {
+                    _editTask(index, updatedTitle.trim(), updatedDueDate);
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text('Save'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              if (updatedTitle.trim().isNotEmpty) {
-                _editTask(index, updatedTitle.trim(), updatedDueDate);
-                Navigator.pop(context);
-              }
-            },
-            child: Text('Save'),
-          ),
-        ],
-      ),
     );
   }
 
-  Future<void> _editTask(int index, String newTitle, DateTime newDueDate) async {
+  Future<void> _editTask(int index, String newTitle,
+      DateTime newDueDate) async {
     await _firestore.collection('tasks').doc(_tasks[index]['id']).update({
       'title': newTitle,
       'dueDate': newDueDate,
@@ -225,46 +232,49 @@ class _TodoScreenState extends State<TodoScreen> {
     String newTaskTitle = '';
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('New Task'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Title input field
-            TextField(
-              autofocus: true,
-              onChanged: (value) => newTaskTitle = value,
-              decoration: InputDecoration(hintText: 'Enter task title'),
+      builder: (context) =>
+          AlertDialog(
+            title: Text('New Task'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title input field
+                TextField(
+                  autofocus: true,
+                  onChanged: (value) => newTaskTitle = value,
+                  decoration: InputDecoration(hintText: 'Enter task title'),
+                ),
+                SizedBox(height: 20),
+                // DateTime Picker button
+                TextButton(
+                  onPressed: () => _pickDateTime(context),
+                  child: Text('Pick Due Date and Time'),
+                ),
+                SizedBox(height: 10),
+                // Text(
+                //   'Due Date: ${_dueDate.toLocal().toString().split(' ')[0]} ${_dueDate.toLocal().toString().split(' ')[1].split('.')[0]}',
+                //   style: TextStyle(fontWeight: FontWeight.w500),
+                // ),
+              ],
             ),
-            SizedBox(height: 20),
-            // DateTime Picker button
-            TextButton(
-              onPressed: () => _pickDateTime(context),
-              child: Text('Pick Due Date and Time'),
-            ),
-            SizedBox(height: 10),
-            // Text(
-            //   'Due Date: ${_dueDate.toLocal().toString().split(' ')[0]} ${_dueDate.toLocal().toString().split(' ')[1].split('.')[0]}',
-            //   style: TextStyle(fontWeight: FontWeight.w500),
-            // ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (newTaskTitle
+                      .trim()
+                      .isNotEmpty) {
+                    _addTask(newTaskTitle.trim());
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text('Add'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              if (newTaskTitle.trim().isNotEmpty) {
-                _addTask(newTaskTitle.trim());
-                Navigator.pop(context);
-              }
-            },
-            child: Text('Add'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -303,30 +313,43 @@ class _TodoScreenState extends State<TodoScreen> {
     final index = _tasks.indexWhere((t) => t['id'] == task['id']);
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      color: Colors.white,
+      elevation: 0,
+      // Removed shadow
       child: ListTile(
         leading: Checkbox(
           value: task['completed'],
           onChanged: (_) => _toggleTaskCompletion(index),
+          activeColor: Colors.indigo, // Color of the checkbox when checked
         ),
         title: Text(
           task['title'],
           style: completed
-              ? TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey)
+              ? TextStyle(
+            decoration: TextDecoration.lineThrough,
+            color: Colors.grey, // Lighter color for completed tasks
+          )
               : TextStyle(fontWeight: FontWeight.w500),
         ),
         subtitle: Text(
-          'Priority: ${task['priority']} | Due: ${task['dueDate'].toLocal().toString().split(' ')[0]}',
+          'Priority: ${task['priority']} | Due: ${task['dueDate']
+              .toLocal()
+              .toString()
+              .split(' ')[0]}',
+          style: TextStyle(color: Colors.grey[600]), // Soft gray for subtitle
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: Icon(Icons.edit),
+              icon: Icon(Icons.edit, color: Colors.indigo, size: 15.0,),
               onPressed: () => _showEditTaskDialog(index),
             ),
             IconButton(
-              icon: Icon(Icons.delete),
+              icon: Icon(Icons.delete, color: Colors.red, size: 15.0,),
               onPressed: () => _deleteTask(index),
             ),
           ],
@@ -335,3 +358,4 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 }
+

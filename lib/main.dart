@@ -81,21 +81,21 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
           },
         ),
             ListTile(
-              title: Text('Home'),
-              leading: SvgPicture.asset('assets/icons/physics.svg', width: 20.0, height: 20.0,),
+              title: Text('PDF'),
+              //leading: SvgPicture.asset('assets/icons/physics.svg', width: 20.0, height: 20.0,),
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => MyApp())); // Close the drawer
               },
             ),
 
         ListTile(
-          title: Text('Profile'),
+          title: Text('To-Do List'),
           onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (context)=>TodoApp())); // Close the drawer
           },
         ),
         ListTile(
-          title: Text('Settings'),
+          title: Text('Schedules'),
           onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (context)=>ScheduleScreen())); // Close the drawer
           },
