@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:googleapis/tasks/v1.dart' as tasks_api;
-import 'package:googleapis_auth/auth_io.dart';
-import 'firebase_options.dart';
-
-// void main() {
-//   runApp(TodoApp());
-// }
 
 class TodoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
       home: TodoScreen(),
     );
   }
@@ -25,75 +21,10 @@ class TodoScreen extends StatefulWidget {
 }
 
 class _TodoScreenState extends State<TodoScreen> {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['https://www.googleapis.com/auth/tasks']);
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> _tasks = [];
-  Future<void> _fetchTasks() async {
-    final user = await _googleSignIn.signIn();
-    if (user == null) return;
-
-    final clientId = ClientId(
-      'YOUR_CLIENT_ID.apps.googleusercontent.com',  // Replace with your real client ID
-      'YOUR_CLIENT_SECRET',                         // Replace with your real client secret
-    );
-
-    final scopes = [tasks_api.TasksApi.tasksScope];
-
-    final client = await clientViaUserConsent(clientId, scopes, (url) {
-      // Open the URL for user consent
-      print('Please go to the following URL and grant access:');
-      print(url);
-    });
-
-    final taskApi = tasks_api.TasksApi(client);
-
-    final taskLists = await taskApi.tasklists.list();
-    if (taskLists.items != null && taskLists.items!.isNotEmpty) {
-      final firstListId = taskLists.items!.first.id!;
-      final taskList = await taskApi.tasks.list(firstListId);
-
-      setState(() {
-        _tasks = taskList.items
-            ?.map((task) => {
-          'id': task.id,
-          'title': task.title ?? 'Untitled',
-          'completed': task.status == 'completed',
-          'synced': true,
-        })
-            .toList() ??
-            [];
-      });
-    }
-
-    client.close();
-  }
-
-
-  Future<void> _addTask(String title) async {
-    final newTask = {
-      'title': title,
-      'completed': false,
-      'synced': false,
-    };
-
-    setState(() {
-      _tasks.add(newTask);
-    });
-
-    await _firestore.collection('tasks').add(newTask);
-  }
-
-  Future<void> _toggleTaskCompletion(int index) async {
-    setState(() {
-      _tasks[index]['completed'] = !_tasks[index]['completed'];
-      _tasks[index]['synced'] = false;
-    });
-
-    await _firestore.collection('tasks').doc(_tasks[index]['id']).update({
-      'completed': _tasks[index]['completed'],
-      'synced': false,
-    });
-  }
+  bool _loading = true;
+  DateTime _dueDate = DateTime.now().add(Duration(days: 1)); // Default due date
 
   @override
   void initState() {
@@ -101,58 +32,305 @@ class _TodoScreenState extends State<TodoScreen> {
     _fetchTasks();
   }
 
+  Future<void> _fetchTasks() async {
+    setState(() => _loading = true);
+
+    final snapshot = await _firestore.collection('tasks').get();
+    final List<Map<String, dynamic>> loadedTasks = snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'id': doc.id,
+        'title': data['title'] ?? '',
+        'completed': data['completed'] ?? false,
+        'priority': data['priority'] ?? 'Medium',
+        'dueDate': (data['dueDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      };
+    }).toList();
+
+    setState(() {
+      _tasks = loadedTasks;
+      _loading = false;
+    });
+  }
+
+  Future<void> _addTask(String title) async {
+    final newTask = {
+      'title': title,
+      'completed': false,
+      'priority': 'Medium',
+      'dueDate': _dueDate,
+    };
+
+    final docRef = await _firestore.collection('tasks').add(newTask);
+    setState(() {
+      _tasks.add({...newTask, 'id': docRef.id});
+    });
+  }
+
+  Future<void> _toggleTaskCompletion(int index) async {
+    final task = _tasks[index];
+    final newStatus = !task['completed'];
+
+    await _firestore.collection('tasks').doc(task['id']).update({
+      'completed': newStatus,
+    });
+
+    setState(() {
+      _tasks[index]['completed'] = newStatus;
+    });
+  }
+
+  Future<void> _editTaskTitle(int index, String newTitle) async {
+    await _firestore.collection('tasks').doc(_tasks[index]['id']).update({
+      'title': newTitle,
+    });
+
+    setState(() {
+      _tasks[index]['title'] = newTitle;
+    });
+  }
+
+  Future<void> _deleteTask(int index) async {
+    await _firestore.collection('tasks').doc(_tasks[index]['id']).delete();
+    setState(() {
+      _tasks.removeAt(index);
+    });
+  }
+
+  // Function to show DateTime picker
+  Future<void> _pickDateTime(BuildContext context) async {
+    // Date picker
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _dueDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+
+    // If the date is picked, show time picker
+    if (pickedDate != null) {
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_dueDate),
+      );
+
+      // If time is picked, set the complete datetime
+      if (pickedTime != null) {
+        setState(() {
+          _dueDate = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
+    }
+  }
+  void _showEditTaskDialog(int index) {
+    String updatedTitle = _tasks[index]['title'];
+    DateTime updatedDueDate = _tasks[index]['dueDate'];
+
+    final titleController = TextEditingController(text: updatedTitle);
+
+    // Function to pick date and time
+    Future<void> _pickDateTimeForEdit() async {
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: updatedDueDate,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2101),
+      );
+
+      if (pickedDate != null) {
+        final pickedTime = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(updatedDueDate),
+        );
+
+        if (pickedTime != null) {
+          setState(() {
+            updatedDueDate = DateTime(
+              pickedDate.year,
+              pickedDate.month,
+              pickedDate.day,
+              pickedTime.hour,
+              pickedTime.minute,
+            );
+          });
+        }
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Task'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title input field
+            TextField(
+              controller: titleController,
+              autofocus: true,
+              onChanged: (value) => updatedTitle = value,
+              decoration: InputDecoration(hintText: 'Task title'),
+            ),
+            SizedBox(height: 20),
+            // DateTime Picker button
+            TextButton(
+              onPressed: _pickDateTimeForEdit,
+              child: Text('Pick Due Date and Time'),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Due Date: ${updatedDueDate.toLocal().toString().split(' ')[0]} ${updatedDueDate.toLocal().toString().split(' ')[1].split('.')[0]}',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (updatedTitle.trim().isNotEmpty) {
+                _editTask(index, updatedTitle.trim(), updatedDueDate);
+                Navigator.pop(context);
+              }
+            },
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editTask(int index, String newTitle, DateTime newDueDate) async {
+    await _firestore.collection('tasks').doc(_tasks[index]['id']).update({
+      'title': newTitle,
+      'dueDate': newDueDate,
+    });
+
+    setState(() {
+      _tasks[index]['title'] = newTitle;
+      _tasks[index]['dueDate'] = newDueDate;
+    });
+  }
+
+  void _showAddTaskDialog() {
+    String newTaskTitle = '';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('New Task'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title input field
+            TextField(
+              autofocus: true,
+              onChanged: (value) => newTaskTitle = value,
+              decoration: InputDecoration(hintText: 'Enter task title'),
+            ),
+            SizedBox(height: 20),
+            // DateTime Picker button
+            TextButton(
+              onPressed: () => _pickDateTime(context),
+              child: Text('Pick Due Date and Time'),
+            ),
+            SizedBox(height: 10),
+            // Text(
+            //   'Due Date: ${_dueDate.toLocal().toString().split(' ')[0]} ${_dueDate.toLocal().toString().split(' ')[1].split('.')[0]}',
+            //   style: TextStyle(fontWeight: FontWeight.w500),
+            // ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (newTaskTitle.trim().isNotEmpty) {
+                _addTask(newTaskTitle.trim());
+                Navigator.pop(context);
+              }
+            },
+            child: Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final activeTasks = _tasks.where((t) => !t['completed']).toList();
+    final completedTasks = _tasks.where((t) => t['completed']).toList();
+
     return Scaffold(
-      appBar: AppBar(title: Text('My Tasks')),
-      body: ListView.builder(
-        itemCount: _tasks.length,
-        itemBuilder: (context, index) {
-          final task = _tasks[index];
-          return ListTile(
-            leading: Checkbox(
-              value: task['completed'],
-              onChanged: (_) => _toggleTaskCompletion(index),
+      appBar: AppBar(title: Text('My To-Do List')),
+      body: _loading
+          ? Center(child: CircularProgressIndicator())
+          : ListView(
+        padding: EdgeInsets.only(bottom: 80),
+        children: [
+          ...activeTasks.map((task) => _buildTaskTile(task, false)),
+          if (completedTasks.isNotEmpty) ...[
+            Divider(),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text('Completed Tasks',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
-            title: Text(task['title']),
-            trailing: task['synced']
-                ? Icon(Icons.cloud_done, color: Colors.green)
-                : Icon(Icons.cloud_off, color: Colors.red),
-          );
-        },
+            ...completedTasks.map((task) => _buildTaskTile(task, true)),
+          ],
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) {
-              String newTaskTitle = '';
-              return AlertDialog(
-                title: Text('New Task'),
-                content: TextField(
-                  onChanged: (value) => newTaskTitle = value,
-                  decoration: InputDecoration(hintText: 'Task title'),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      if (newTaskTitle.isNotEmpty) {
-                        _addTask(newTaskTitle);
-                        Navigator.pop(context);
-                      }
-                    },
-                    child: Text('Add'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
+        onPressed: _showAddTaskDialog,
         child: Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildTaskTile(Map<String, dynamic> task, bool completed) {
+    final index = _tasks.indexWhere((t) => t['id'] == task['id']);
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      elevation: 3,
+      child: ListTile(
+        leading: Checkbox(
+          value: task['completed'],
+          onChanged: (_) => _toggleTaskCompletion(index),
+        ),
+        title: Text(
+          task['title'],
+          style: completed
+              ? TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey)
+              : TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: Text(
+          'Priority: ${task['priority']} | Due: ${task['dueDate'].toLocal().toString().split(' ')[0]}',
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(Icons.edit),
+              onPressed: () => _showEditTaskDialog(index),
+            ),
+            IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () => _deleteTask(index),
+            ),
+          ],
+        ),
       ),
     );
   }

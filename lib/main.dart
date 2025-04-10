@@ -8,6 +8,7 @@ import 'package:studygpt1/todo.dart';
 import 'home.dart';
 import 'firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'slt.dart';
 
 void main () async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,9 +28,17 @@ class StudyGPTApp extends StatelessWidget {
   }
 }
 
-class StudyGPTHome extends StatelessWidget {
+class StudyGPTHome extends StatefulWidget {
+  @override
+  _StudyGPTHomeState createState() => _StudyGPTHomeState();
+}
+
+class _StudyGPTHomeState extends State<StudyGPTHome> {
+  bool showScheduleCard = true;
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -44,7 +53,7 @@ class StudyGPTHome extends StatelessWidget {
         title: Text('StudyGPT', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
-          Icon(Icons.search, color: Colors.black),
+          Icon(Icons.notification_add, color: Colors.black),
           SizedBox(width: 10),
           Icon(Icons.account_circle, color: Colors.black),
           SizedBox(width: 10),
@@ -101,7 +110,27 @@ class StudyGPTHome extends StatelessWidget {
           children: [
             Text('Welcome, Kal', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             SizedBox(height: 10),
-            _buildScheduleCard(),
+            if (showScheduleCard)
+              ScheduleCard(
+                onDismiss: () {
+                  setState(() {
+                    showScheduleCard = false;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Schedule dismissed'),
+                      action: SnackBarAction(
+                        label: 'Undo',
+                        onPressed: () {
+                          setState(() {
+                            showScheduleCard = true;
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
             SizedBox(height: 20),
             Text("Let's start Learning!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 10),
