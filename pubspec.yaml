@@ -54,6 +54,9 @@ dependencies:
   firebase_auth: ^4.2.2
   velocity_x: ^4.1.2
   getwidget: ^6.0.0
+  fluttertoast: ^8.2.5
+  flutter_local_notifications: ^18.0.0
+  timezone: ^0.9.2
 
 
 dev_dependencies:
