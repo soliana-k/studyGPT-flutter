@@ -301,16 +301,21 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
     extractChapters();
     await _loadLastPage();
   }
-
   Future<void> _loadLastPage() async {
     final prefs = await SharedPreferences.getInstance();
     final lastPage = prefs.getInt('last_page') ?? 1;
 
-    // Delay to allow the PDF viewer to render before jumping
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _pdfViewerController.jumpToPage(lastPage);
+      setState(() {
+        currentPage = lastPage;
+        if (pdfDocument != null) {
+          readingProgress = (lastPage / pdfDocument!.pages.count) * 100;
+        }
+      });
     });
   }
+
 
   void extractChapters() {
     chapters.clear();
@@ -589,11 +594,28 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+     return WillPopScope(
+       onWillPop: () async {
+         // Save current progress before popping
+         final prefs = await SharedPreferences.getInstance();
+         final currentPage = _pdfViewerController.pageNumber;
+         final totalPages = pdfDocument?.pages.count ?? 1;
+         await prefs.setInt('last_page', currentPage);
+         await prefs.setDouble('reading_progress', (currentPage / totalPages) * 100);
+
+         // Return true to allow pop, and send back a result
+         Navigator.pop(context, true); // This triggers the `if (result == true)` block
+         return false; // Prevent default pop (since we manually popped)
+       },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF86363),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context, true),
+        ),
         title: const Text('Some Book Grade 9', style: TextStyle(color: Colors.white)),
         centerTitle: true,
         actions: [
@@ -656,7 +678,9 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
 
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setInt('last_page', currentPage);
+                  await prefs.setDouble('reading_progress', readingProgress); // <-- ADD THIS LINE
                 },
+
               ),
             ),
           ),
@@ -689,6 +713,8 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
         child: const Icon(Icons.chat),
         onPressed: () {},
       ),
-    );
+    ),
+     );
+
   }
 }

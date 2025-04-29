@@ -325,6 +325,7 @@ import 'home.dart';
 import 'firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -355,6 +356,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
   bool isLoading = true;
   String studyTipTitle = "Loading...";
   String studyTipDescription = "";
+  double pdfReadingProgress = 0.0;
 
 
   final CollectionReference studyTipsCollection =
@@ -396,11 +398,18 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     });
     await _fetchStudyTips();
   }
+  Future<void> _loadReadingProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      pdfReadingProgress = prefs.getDouble('reading_progress') ?? 0.0;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _fetchStudyTips();
+    _loadReadingProgress();
   }
 
   @override
@@ -564,23 +573,17 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     List<Map<String, dynamic>> subjects = [
       {
         "title": "Mathematics",
-        "progress": "50% Completed",
         "icon": 'assets/icons/mathematics.svg',
-        "percent": 0.5,
         "color": Colors.blue
       },
       {
         "title": "Chemistry",
-        "progress": "55% Completed",
         "icon": 'assets/icons/chemistrysvg.svg',
-        "percent": 0.55,
         "color": Colors.green
       },
       {
         "title": "Physics",
-        "progress": "60% Completed",
         "icon": 'assets/icons/physics.svg',
-        "percent": 0.6,
         "color": Colors.red
       },
     ];
@@ -590,17 +593,27 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
       child: Row(
         children: subjects.map((subject) {
           return GestureDetector(
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => PDFReaderPage()),
               );
+
+              if (result == true) {
+                final prefs = await SharedPreferences.getInstance();
+                setState(() {
+                  pdfReadingProgress = prefs.getDouble('reading_progress') ?? 0.0;
+                });
+              }
             },
             child: _buildLearningCard(
               subject["title"],
-              subject["progress"],
+              pdfReadingProgress > 0
+                  ? "${pdfReadingProgress.round()}% Completed"
+                  : "Loading...",
+              // Updated dynamically
               subject["icon"],
-              subject["percent"],
+              (pdfReadingProgress / 100).clamp(0.0, 1.0), // Updated dynamically
               subject["color"],
             ),
           );
@@ -608,6 +621,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
       ),
     );
   }
+
 
   Widget _buildLearningCard(String title, String progress, String icon,
       double percent, Color col) {
