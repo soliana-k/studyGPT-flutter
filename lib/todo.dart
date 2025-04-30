@@ -7,7 +7,7 @@ class TodoApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.indigo,
+        primarySwatch: Colors.teal,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: TodoScreen(),
@@ -42,7 +42,7 @@ class _TodoScreenState extends State<TodoScreen> {
         'id': doc.id,
         'title': data['title'] ?? '',
         'completed': data['completed'] ?? false,
-        'priority': data['priority'] ?? 'Medium',
+
         'dueDate': (data['dueDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       };
     }).toList();
@@ -57,7 +57,7 @@ class _TodoScreenState extends State<TodoScreen> {
     final newTask = {
       'title': title,
       'completed': false,
-      'priority': 'Medium',
+
       'dueDate': _dueDate,
     };
 
@@ -323,19 +323,19 @@ class _TodoScreenState extends State<TodoScreen> {
         leading: Checkbox(
           value: task['completed'],
           onChanged: (_) => _toggleTaskCompletion(index),
-          activeColor: Colors.indigo, // Color of the checkbox when checked
+          activeColor: Colors.teal.shade600,
         ),
         title: Text(
           task['title'],
           style: completed
               ? TextStyle(
             decoration: TextDecoration.lineThrough,
-            color: Colors.grey, // Lighter color for completed tasks
+            color: Colors.grey,
           )
               : TextStyle(fontWeight: FontWeight.w500),
         ),
         subtitle: Text(
-          'Priority: ${task['priority']} | Due: ${task['dueDate']
+           ' Due: ${task['dueDate']
               .toLocal()
               .toString()
               .split(' ')[0]}',
@@ -345,7 +345,7 @@ class _TodoScreenState extends State<TodoScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: Icon(Icons.edit, color: Colors.indigo, size: 15.0,),
+              icon: Icon(Icons.edit, color: Colors.teal.shade600, size: 15.0,),
               onPressed: () => _showEditTaskDialog(index),
             ),
             IconButton(

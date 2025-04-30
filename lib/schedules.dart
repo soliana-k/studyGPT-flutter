@@ -185,7 +185,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.purple.shade300,
+        backgroundColor: Colors.teal.shade600,
         title: Text('Schedule', style: TextStyle(color: Colors.white)),
         elevation: 0,
       ),
@@ -217,25 +217,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             headerStyle: HeaderStyle(
               formatButtonVisible: false,
               titleCentered: true,
-              leftChevronIcon: Icon(Icons.arrow_left, color: Colors.purple.shade300),
-              rightChevronIcon: Icon(Icons.arrow_right, color: Colors.purple.shade300),
+              leftChevronIcon: Icon(Icons.arrow_left, color: Colors.teal.shade700),
+              rightChevronIcon: Icon(Icons.arrow_right, color: Colors.teal.shade700),
             ),
             calendarStyle: CalendarStyle(
               selectedDecoration: BoxDecoration(
-                color: Colors.purple.shade200,
+                color: Colors.teal.shade200,
                 shape: BoxShape.circle,
               ),
               todayDecoration: BoxDecoration(
-                color: Colors.purple.shade100,
+                color: Colors.teal.shade100,
                 shape: BoxShape.circle,
               ),
-              weekendTextStyle: TextStyle(color: Colors.purple.shade500),
+              weekendTextStyle: TextStyle(color: Colors.teal.shade500),
             ),
           ),
           const SizedBox(height: 16.0),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple.shade300,
+              backgroundColor: Colors.teal.shade300,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -309,7 +309,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.event, color: Colors.purple.shade300),
+                                Icon(Icons.event, color: Colors.teal.shade400),
                                 SizedBox(width: 12),
                                 Expanded(child: Text(event['title']!, style: TextStyle(fontSize: 16))),
                               ],
