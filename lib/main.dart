@@ -249,45 +249,8 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     );
   }
 
-  Widget _buildDailyChallenges() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _buildChallengeCard("Maths", "Solve for X:\n2x + 3 = 11"),
-          _buildChallengeCard(
-              "Physics", "What is the formula for Kinetic Energy?"),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildChallengeCard(String subject, String question) {
-    return Container(
-      width: 250,
-      child: Card(
-        color: subject == "Maths" ? Colors.blue : Colors.red,
-        child: Padding(
-          padding: EdgeInsets.all(15.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(subject,
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
-              SizedBox(height: 5),
-              Text(question, style: TextStyle(color: Colors.white)),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                    "Show Answer", style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildLearningCards() {
     List<Map<String, dynamic>> subjects = [
@@ -382,21 +345,31 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
   }
 
   Widget _buildPlannerCard(String iconPath, String title) {
-    return Container(
-      width: 150,
-      height: 160,
-      child: Card(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(iconPath, width: 60, height: 60),
-            SizedBox(height: 10),
-            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
+    return GestureDetector(
+      onTap: () {
+        if (title == 'To-Do List') {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => TodoApp()));
+        } else if (title == 'Schedule') {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ScheduleScreen()));
+        }
+      },
+      child: Container(
+        width: 150,
+        height: 160,
+        child: Card(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SvgPicture.asset(iconPath, width: 60, height: 60),
+              SizedBox(height: 10),
+              Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
         ),
       ),
     );
   }
+
 
   Widget _buildTipOfTheDay() {
     return Card(
