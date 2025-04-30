@@ -361,6 +361,21 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
 
   final CollectionReference studyTipsCollection =
   FirebaseFirestore.instance.collection('study_tips');
+  Future<bool> hasSchedule() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('schedules')
+          .limit(1) // Limit to 1 document for efficiency
+          .get();
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      print("Error checking schedule: $e");
+      return false; // In case of error, assume no schedule exists
+    }
+  }
+
+
+
 
   Future<void> _fetchStudyTips() async {
     try {
@@ -404,12 +419,19 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
       pdfReadingProgress = prefs.getDouble('reading_progress') ?? 0.0;
     });
   }
+  Future<void> _checkForSchedule() async {
+    bool scheduleExists = await hasSchedule();
+    setState(() {
+      showScheduleCard = !scheduleExists; // Hide the card if schedule exists
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _fetchStudyTips();
     _loadReadingProgress();
+    _checkForSchedule();
   }
 
   @override
@@ -475,57 +497,68 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
           ],
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _refresh,
-        child: SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Welcome, Kal',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              if (showScheduleCard)
-                ScheduleCard(
-                  onDismiss: () {
-                    setState(() {
-                      showScheduleCard = false;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Schedule dismissed'),
-                      action: SnackBarAction(
-                        label: 'Undo',
-                        onPressed: () {
-                          setState(() {
-                            showScheduleCard = true;
-                          });
-                        },
-                      ),
-                    ));
-                  },
-                ),
-              SizedBox(height: 20),
-              Text("Let's start Learning!",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              _buildLearningCards(),
-              SizedBox(height: 20),
-              Text("Academic Planners",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              _buildPlannerCards(),
-              SizedBox(height: 20),
-              _buildTipOfTheDay(),
-              SizedBox(height: 20),
-              Text("Daily Challenges 🏆",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              _buildDailyChallenges(),
-            ],
-          ),
-        ),
-      ),
+      body: FutureBuilder<bool>(
+          future: hasSchedule(),
+          builder: (context, snapshot) {
+    if (!snapshot.hasData) {
+    return Center(child: CircularProgressIndicator());
+    }
+
+    final scheduleExists = snapshot.data!;
+    return RefreshIndicator(
+    onRefresh: _refresh,
+    child: SingleChildScrollView(
+    physics: AlwaysScrollableScrollPhysics(),
+    padding: EdgeInsets.all(16.0),
+
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    Text('Welcome, Kal',
+    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+    SizedBox(height: 10),
+    if (showScheduleCard)
+    ScheduleCard(
+    onDismiss: () {
+    setState(() {
+    showScheduleCard = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Text('Schedule dismissed'),
+    action: SnackBarAction(
+    label: 'Undo',
+    onPressed: () {
+    setState(() {
+    showScheduleCard = true;
+    });
+    },
+    ),
+    ));
+    },
+    ),
+    SizedBox(height: 20),
+    Text("Let's start Learning!",
+    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    SizedBox(height: 10),
+    _buildLearningCards(),
+    SizedBox(height: 20),
+    Text("Academic Planners",
+    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    SizedBox(height: 10),
+    _buildPlannerCards(),
+    SizedBox(height: 20),
+    _buildTipOfTheDay(),
+    SizedBox(height: 20),
+    Text("Daily Challenges 🏆",
+    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    SizedBox(height: 10),
+    _buildDailyChallenges(),
+    ],
+    ),
+    ),
+    );
+    }
+    ),
     );
   }
 
