@@ -51,12 +51,12 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('schedules')
-          .limit(1) // Limit to 1 document for efficiency
+          .limit(1)
           .get();
       return snapshot.docs.isNotEmpty;
     } catch (e) {
       print("Error checking schedule: $e");
-      return false; // In case of error, assume no schedule exists
+      return false;
     }
   }
 
@@ -108,7 +108,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
   Future<void> _checkForSchedule() async {
     bool scheduleExists = await hasSchedule();
     setState(() {
-      showScheduleCard = !scheduleExists; // Hide the card if schedule exists
+      showScheduleCard = !scheduleExists;
     });
   }
 

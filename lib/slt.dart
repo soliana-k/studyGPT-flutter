@@ -230,11 +230,11 @@ class _ScheduleCardState extends State<ScheduleCard> {
         await _scheduleNotification(day, selectedTime!);
       } catch (e) {
         print('⚠️ Failed to schedule notification for $day: $e');
-        // Optional: report this error or display a subtle UI alert
+
       }
     }
 
-    // Dismiss the schedule UI after saving
+
     widget.onDismiss();
   }
 

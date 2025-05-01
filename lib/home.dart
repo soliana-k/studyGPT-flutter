@@ -160,7 +160,7 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            // Load persisted values
+
             SharedPreferences.getInstance().then((prefs) {
               final savedRate = prefs.getDouble('speech_rate') ?? 0.5;
               final voiceName = prefs.getString('voice_name');

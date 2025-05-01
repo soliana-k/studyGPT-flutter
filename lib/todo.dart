@@ -24,7 +24,7 @@ class _TodoScreenState extends State<TodoScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> _tasks = [];
   bool _loading = true;
-  DateTime _dueDate = DateTime.now().add(Duration(days: 1)); // Default due date
+  DateTime _dueDate = DateTime.now().add(Duration(days: 1));
 
   @override
   void initState() {
@@ -97,7 +97,7 @@ class _TodoScreenState extends State<TodoScreen> {
     });
   }
 
-  // Function to show DateTime picker
+
   Future<void> _pickDateTime(BuildContext context) async {
     // Date picker
     final pickedDate = await showDatePicker(
@@ -107,14 +107,14 @@ class _TodoScreenState extends State<TodoScreen> {
       lastDate: DateTime(2101),
     );
 
-    // If the date is picked, show time picker
+
     if (pickedDate != null) {
       final pickedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(_dueDate),
       );
 
-      // If time is picked, set the complete datetime
+
       if (pickedTime != null) {
         setState(() {
           _dueDate = DateTime(
@@ -135,7 +135,7 @@ class _TodoScreenState extends State<TodoScreen> {
 
     final titleController = TextEditingController(text: updatedTitle);
 
-    // Function to pick date and time
+
     Future<void> _pickDateTimeForEdit() async {
       final pickedDate = await showDatePicker(
         context: context,
@@ -172,7 +172,7 @@ class _TodoScreenState extends State<TodoScreen> {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Title input field
+
                 TextField(
                   controller: titleController,
                   autofocus: true,
@@ -180,7 +180,7 @@ class _TodoScreenState extends State<TodoScreen> {
                   decoration: InputDecoration(hintText: 'Task title'),
                 ),
                 SizedBox(height: 20),
-                // DateTime Picker button
+
                 TextButton(
                   onPressed: _pickDateTimeForEdit,
                   child: Text('Pick Due Date and Time'),
@@ -238,14 +238,14 @@ class _TodoScreenState extends State<TodoScreen> {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Title input field
+
                 TextField(
                   autofocus: true,
                   onChanged: (value) => newTaskTitle = value,
                   decoration: InputDecoration(hintText: 'Enter task title'),
                 ),
                 SizedBox(height: 20),
-                // DateTime Picker button
+
                 TextButton(
                   onPressed: () => _pickDateTime(context),
                   child: Text('Pick Due Date and Time'),
@@ -318,7 +318,7 @@ class _TodoScreenState extends State<TodoScreen> {
       ),
       color: Colors.white,
       elevation: 0,
-      // Removed shadow
+
       child: ListTile(
         leading: Checkbox(
           value: task['completed'],
@@ -339,7 +339,7 @@ class _TodoScreenState extends State<TodoScreen> {
               .toLocal()
               .toString()
               .split(' ')[0]}',
-          style: TextStyle(color: Colors.grey[600]), // Soft gray for subtitle
+          style: TextStyle(color: Colors.grey[600]),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,

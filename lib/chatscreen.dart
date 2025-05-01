@@ -1,4 +1,3 @@
-// chat_screen_with_scroll.dart
 import 'package:flutter/material.dart';
 
 class ChatScreenWithScroll extends StatefulWidget {

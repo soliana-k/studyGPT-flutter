@@ -14,12 +14,12 @@ class _TriviaScreenState extends State<TriviaScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = fetchTriviaQuestions('science'); // You can change category
+    _questions = fetchTriviaQuestions('science');
   }
 
-  // Fetch trivia questions from Open Trivia Database
+
   Future<List<Map<String, String>>> fetchTriviaQuestions(String category) async {
-    final url = Uri.parse('https://opentdb.com/api.php?amount=10&category=17'); // Category 17 = Science
+    final url = Uri.parse('https://opentdb.com/api.php?amount=10&category=17');
     final response = await http.get(url);
     final unescape = HtmlUnescape();
 
@@ -75,7 +75,7 @@ class _TriviaScreenState extends State<TriviaScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: SizedBox(
-        height: 200, // This is CRITICAL to avoid infinite height in horizontal scroll
+        height: 200,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -117,7 +117,7 @@ class _ChallengeCardState extends State<ChallengeCard> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 250, // Fixed width for horizontal card
+      width: 250,
       child: Card(
         color: widget.subject == "Maths" ? Colors.blue : Colors.teal,
         child: Padding(

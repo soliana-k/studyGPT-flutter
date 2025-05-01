@@ -23,7 +23,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     try {
-      // Replace with your real LLM API call
+      // TODO: Replace with API
       final responseText = await sendToLLMBackend(inputText);
 
       setState(() {
@@ -41,7 +41,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<String> sendToLLMBackend(String message) async {
-    // TODO: Replace this with actual API call to your LLM
+    // TODO: Replace this with actual API
     await Future.delayed(const Duration(seconds: 2)); // Simulated delay
     return "This is a sample response to: \"$message\"";
   }
