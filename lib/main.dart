@@ -6,27 +6,56 @@ import 'package:studygpt1/challenges.dart';
 import 'package:studygpt1/chatbot.dart';
 import 'package:studygpt1/schedules.dart';
 import 'package:studygpt1/todo.dart';
+import 'login_screen.dart';
 import 'slt.dart';
 import 'home.dart';
 import 'firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'login_screen.dart'; // Add this import for LoginScreen
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Temporary reset for testing (remove after confirming the flow)
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('loggedIn', false);
   runApp(StudyGPTApp());
 }
 
 class StudyGPTApp extends StatelessWidget {
+  // Function to check if the user is logged in
+  Future<bool> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('loggedIn') ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: StudyGPTHome(),
+      // Use FutureBuilder to dynamically decide the home screen
+      home: FutureBuilder<bool>(
+        future: _checkLoginStatus(),
+        builder: (context, snapshot) {
+          // While checking login status, show a loading indicator
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          // If there's an error, default to the login screen
+          if (snapshot.hasError) {
+            return LoginScreen();
+          }
+          // If the user is logged in, show StudyGPTHome; otherwise, show LoginScreen
+          final isLoggedIn = snapshot.data ?? false;
+          return isLoggedIn ? StudyGPTHome() : LoginScreen();
+        },
+      ),
     );
   }
 }
@@ -44,9 +73,9 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
   String studyTipDescription = "";
   double pdfReadingProgress = 0.0;
 
-
   final CollectionReference studyTipsCollection =
   FirebaseFirestore.instance.collection('study_tips');
+
   Future<bool> hasSchedule() async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -60,15 +89,11 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     }
   }
 
-
-
-
   Future<void> _fetchStudyTips() async {
     try {
       QuerySnapshot snapshot = await studyTipsCollection.limit(10).get();
       if (snapshot.docs.isNotEmpty) {
-        final randomTip = (snapshot.docs.toList()
-          ..shuffle()).first;
+        final randomTip = (snapshot.docs.toList()..shuffle()).first;
         setState(() {
           studyTipTitle = randomTip['title'] ?? "No title";
           studyTipDescription = randomTip['content'] ?? "No description.";
@@ -91,7 +116,6 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     }
   }
 
-
   Future<void> _refresh() async {
     setState(() {
       studyTip = "Refreshing tip...";
@@ -99,12 +123,14 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     });
     await _fetchStudyTips();
   }
+
   Future<void> _loadReadingProgress() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       pdfReadingProgress = prefs.getDouble('reading_progress') ?? 0.0;
     });
   }
+
   Future<void> _checkForSchedule() async {
     bool scheduleExists = await hasSchedule();
     setState(() {
@@ -135,8 +161,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               color: Colors.black);
         }),
         title: Text('StudyGPT',
-            style:
-            TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
           Icon(Icons.notification_add, color: Colors.black),
@@ -156,7 +181,8 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
             ListTile(
               title: Text('Home'),
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen()));
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => ChatScreen()));
               },
             ),
             ListTile(
@@ -173,7 +199,6 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
                     MaterialPageRoute(builder: (context) => TodoApp()));
               },
             ),
-
             ListTile(
               title: Text('Schedules'),
               onTap: () {
@@ -187,70 +212,69 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
       body: FutureBuilder<bool>(
           future: hasSchedule(),
           builder: (context, snapshot) {
-    if (!snapshot.hasData) {
-    return Center(child: CircularProgressIndicator());
-    }
+            if (!snapshot.hasData) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-    final scheduleExists = snapshot.data!;
-    return RefreshIndicator(
-    onRefresh: _refresh,
-    child: SingleChildScrollView(
-    physics: AlwaysScrollableScrollPhysics(),
-    padding: EdgeInsets.all(16.0),
-
-    child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    Text('Welcome, Kal',
-    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-    SizedBox(height: 10),
-    if (showScheduleCard)
-    ScheduleCard(
-    onDismiss: () {
-    setState(() {
-    showScheduleCard = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Text('Schedule dismissed'),
-    action: SnackBarAction(
-    label: 'Undo',
-    onPressed: () {
-    setState(() {
-    showScheduleCard = true;
-    });
-    },
-    ),
-    ));
-    },
-    ),
-    SizedBox(height: 20),
-    Text("Let's start Learning!",
-    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    SizedBox(height: 10),
-    _buildLearningCards(),
-    SizedBox(height: 20),
-    Text("Academic Planners",
-    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    SizedBox(height: 10),
-    _buildPlannerCards(),
-    SizedBox(height: 20),
-    _buildTipOfTheDay(),
-    SizedBox(height: 20),
-    Text("Daily Challenges 🏆",
-    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    SizedBox(height: 10),
-    TriviaScreen(),
-    ],
-    ),
-    ),
-    );
-    }
-    ),
+            final scheduleExists = snapshot.data!;
+            return RefreshIndicator(
+              onRefresh: _refresh,
+              child: SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Welcome, Kal',
+                        style: TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    if (showScheduleCard)
+                      ScheduleCard(
+                        onDismiss: () {
+                          setState(() {
+                            showScheduleCard = false;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('Schedule dismissed'),
+                            action: SnackBarAction(
+                              label: 'Undo',
+                              onPressed: () {
+                                setState(() {
+                                  showScheduleCard = true;
+                                });
+                              },
+                            ),
+                          ));
+                        },
+                      ),
+                    SizedBox(height: 20),
+                    Text("Let's start Learning!",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    _buildLearningCards(),
+                    SizedBox(height: 20),
+                    Text("Academic Planners",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    _buildPlannerCards(),
+                    SizedBox(height: 20),
+                    _buildTipOfTheDay(),
+                    SizedBox(height: 20),
+                    Text("Daily Challenges 🏆",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    TriviaScreen(),
+                  ],
+                ),
+              ),
+            );
+          }),
     );
   }
-
-
-
 
   Widget _buildLearningCards() {
     List<Map<String, dynamic>> subjects = [
@@ -285,7 +309,8 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               if (result == true) {
                 final prefs = await SharedPreferences.getInstance();
                 setState(() {
-                  pdfReadingProgress = prefs.getDouble('reading_progress') ?? 0.0;
+                  pdfReadingProgress =
+                      prefs.getDouble('reading_progress') ?? 0.0;
                 });
               }
             },
@@ -294,9 +319,8 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               pdfReadingProgress > 0
                   ? "${pdfReadingProgress.round()}% Completed"
                   : "Loading...",
-              // Updated dynamically
               subject["icon"],
-              (pdfReadingProgress / 100).clamp(0.0, 1.0), // Updated dynamically
+              (pdfReadingProgress / 100).clamp(0.0, 1.0),
               subject["color"],
             ),
           );
@@ -305,9 +329,8 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     );
   }
 
-
-  Widget _buildLearningCard(String title, String progress, String icon,
-      double percent, Color col) {
+  Widget _buildLearningCard(
+      String title, String progress, String icon, double percent, Color col) {
     return Container(
       width: 150,
       height: 160,
@@ -350,7 +373,8 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
         if (title == 'To-Do List') {
           Navigator.push(context, MaterialPageRoute(builder: (_) => TodoApp()));
         } else if (title == 'Schedule') {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => ScheduleScreen()));
+          Navigator.push(
+              context, MaterialPageRoute(builder: (_) => ScheduleScreen()));
         }
       },
       child: Container(
@@ -370,7 +394,6 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     );
   }
 
-
   Widget _buildTipOfTheDay() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -381,7 +404,6 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -400,8 +422,6 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               ],
             ),
             SizedBox(height: 10),
-
-            // Tip Content
             isLoading
                 ? Row(
               children: [
@@ -437,4 +457,3 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     );
   }
 }
-
