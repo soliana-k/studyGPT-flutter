@@ -6,6 +6,7 @@ import 'package:studygpt1/challenges.dart';
 import 'package:studygpt1/chatbot.dart';
 import 'package:studygpt1/schedules.dart';
 import 'package:studygpt1/todo.dart';
+import 'package:studygpt1/quiz.dart';
 import 'login_screen.dart';
 import 'slt.dart';
 import 'home.dart';
@@ -13,7 +14,6 @@ import 'firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'login_screen.dart'; // Add this import for LoginScreen
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +27,6 @@ void main() async {
 }
 
 class StudyGPTApp extends StatelessWidget {
-  // Function to check if the user is logged in
   Future<bool> _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('loggedIn') ?? false;
@@ -37,21 +36,17 @@ class StudyGPTApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      // Use FutureBuilder to dynamically decide the home screen
       home: FutureBuilder<bool>(
         future: _checkLoginStatus(),
         builder: (context, snapshot) {
-          // While checking login status, show a loading indicator
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          // If there's an error, default to the login screen
           if (snapshot.hasError) {
             return LoginScreen();
           }
-          // If the user is logged in, show StudyGPTHome; otherwise, show LoginScreen
           final isLoggedIn = snapshot.data ?? false;
           return isLoggedIn ? StudyGPTHome() : LoginScreen();
         },
@@ -172,38 +167,88 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
       ),
       drawer: Drawer(
         child: ListView(
+          padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
               decoration: BoxDecoration(color: Colors.teal.shade600),
-              child: Text('Menu',
-                  style: TextStyle(color: Colors.white, fontSize: 24)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text('Menu',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
+                  Text('StudyGPT App',
+                      style: TextStyle(color: Colors.white70, fontSize: 14)),
+                ],
+              ),
             ),
             ListTile(
-              title: Text('Home'),
+              leading: Icon(Icons.home, color: Colors.teal.shade700),
+              title: Text('Home', style: TextStyle(fontWeight: FontWeight.w500)),
               onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(context,
+                    MaterialPageRoute(builder: (context) => StudyGPTHome()));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.chat, color: Colors.teal.shade700),
+              title: Text('Chat', style: TextStyle(fontWeight: FontWeight.w500)),
+              onTap: () {
+                Navigator.pop(context);
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => ChatScreen()));
               },
             ),
             ListTile(
-              title: Text('PDF'),
+              leading: Icon(Icons.picture_as_pdf, color: Colors.teal.shade700),
+              title: Text('PDF Reader', style: TextStyle(fontWeight: FontWeight.w500)),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => PDFReaderPage()));
               },
             ),
             ListTile(
-              title: Text('To-Do List'),
+              leading: Icon(Icons.checklist, color: Colors.teal.shade700),
+              title: Text('To-Do List', style: TextStyle(fontWeight: FontWeight.w500)),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => TodoApp()));
               },
             ),
             ListTile(
-              title: Text('Schedules'),
+              leading: Icon(Icons.calendar_today, color: Colors.teal.shade700),
+              title: Text('Schedules', style: TextStyle(fontWeight: FontWeight.w500)),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => ScheduleScreen()));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.quiz, color: Colors.teal.shade700),
+              title: Text('Quiz', style: TextStyle(fontWeight: FontWeight.w500)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => Quiz())); // Updated to use QuizScreen from quiz.dart
+              },
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.exit_to_app, color: Colors.grey),
+              title: Text('Logout', style: TextStyle(color: Colors.grey)),
+              onTap: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('loggedIn', false);
+                Navigator.pushReplacement(context,
+                    MaterialPageRoute(builder: (context) => LoginScreen()));
               },
             ),
           ],
@@ -334,22 +379,30 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     return Container(
       width: 150,
       height: 160,
+      margin: EdgeInsets.only(right: 10),
       child: Card(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            CircularPercentIndicator(
-              radius: 40.0,
-              lineWidth: 5.0,
-              percent: percent,
-              center: SvgPicture.asset(icon, width: 40, height: 40),
-              progressColor: col,
-            ),
-            SizedBox(height: 5),
-            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 5),
-            Text(progress, style: TextStyle(color: Colors.black54)),
-          ],
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              CircularPercentIndicator(
+                radius: 40.0,
+                lineWidth: 5.0,
+                percent: percent,
+                center: SvgPicture.asset(icon, width: 40, height: 40),
+                progressColor: col,
+              ),
+              SizedBox(height: 5),
+              Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 5),
+              Text(progress, style: TextStyle(color: Colors.black54)),
+            ],
+          ),
         ),
       ),
     );
@@ -361,6 +414,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
       child: Row(
         children: [
           _buildPlannerCard('assets/icons/todo.svg', 'To-Do List'),
+          SizedBox(width: 10),
           _buildPlannerCard('assets/icons/schedule.svg', 'Schedule'),
         ],
       ),
@@ -381,13 +435,20 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
         width: 150,
         height: 160,
         child: Card(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(iconPath, width: 60, height: 60),
-              SizedBox(height: 10),
-              Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-            ],
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(iconPath, width: 60, height: 60),
+                SizedBox(height: 16),
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
         ),
       ),
