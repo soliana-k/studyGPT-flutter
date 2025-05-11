@@ -118,10 +118,10 @@ class _LoginScreenState extends State<LoginScreen>
           Uri.parse('http://56.228.80.139/api/account/login/'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'email': _emailController.text,
+            'username_or_email': _emailController.text,
             'password': _passwordController.text,
           }),
-        );
+        ).timeout(const Duration(seconds: 15)); // Added timeout
 
         print('Login response: ${response.statusCode} - ${response.body}');
 
@@ -144,24 +144,28 @@ class _LoginScreenState extends State<LoginScreen>
             MaterialPageRoute(builder: (context) => StudyGPTHome()),
           );
         } else {
-
           final errorData = jsonDecode(response.body);
           String errorMessage = 'Login failed. Please try again.';
-
-          if (errorData.containsKey('detail')) {
-            errorMessage = errorData['detail'];
-          } else if (errorData.containsKey('non_field_errors')) {
-            errorMessage = errorData['non_field_errors'][0];
-          } else if (errorData.containsKey('email')) {
-            errorMessage = 'Email: ${errorData['email'][0]}';
-          } else if (errorData.containsKey('password')) {
-            errorMessage = 'Password: ${errorData['password'][0]}';
+          if (errorData is Map<String, dynamic>) {
+            if (errorData.containsKey('detail')) {
+              errorMessage = errorData['detail'];
+            } else if (errorData.containsKey('non_field_errors')) {
+              errorMessage = errorData['non_field_errors'][0];
+            } else if (errorData.containsKey('email')) {
+              errorMessage = 'Email: ${errorData['email'][0]}';
+            } else if (errorData.containsKey('password')) {
+              errorMessage = 'Password: ${errorData['password'][0]}';
+            } else if (errorData.containsKey('username')) {
+              errorMessage = 'Username: ${errorData['username'][0]}';
+            } else {
+              errorMessage = 'Error: ${response.body}';
+            }
           }
-
           _showToast(errorMessage, Colors.red);
         }
       } catch (e) {
-        _showToast("Network error: ${e.toString()}", Colors.red);
+        print('Error: $e');
+        _showToast("Network error: ${e.toString()}. Please check your connection.", Colors.red);
       } finally {
         setState(() => _isLoading = false);
       }
@@ -171,10 +175,11 @@ class _LoginScreenState extends State<LoginScreen>
   void _showToast(String message, Color backgroundColor) {
     Fluttertoast.showToast(
       msg: message,
-      toastLength: Toast.LENGTH_SHORT,
+      toastLength: Toast.LENGTH_LONG,
       gravity: ToastGravity.BOTTOM,
       backgroundColor: backgroundColor,
       textColor: Colors.white,
+      timeInSecForIosWeb: 5,
     );
   }
 
@@ -280,18 +285,18 @@ class _LoginScreenState extends State<LoginScreen>
                             _buildTextField(
                               controller: _emailController,
                               focusNode: _emailFocusNode,
-                              label: 'Email',
-                              hintText: 'Enter your email',
+                              label: 'Email or Username',
+                              hintText: 'Enter your email or username',
                               icon: Icons.email,
                               keyboardType: TextInputType.emailAddress,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter your email';
+                                  return 'Please enter your email or username';
                                 }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                    .hasMatch(value)) {
-                                  return 'Enter a valid email address';
-                                }
+                                // if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                //     .hasMatch(value) && !RegExp(r'^\w+$').hasMatch(value)) {
+                                //   return 'Enter a valid email or username';
+                                // }
                                 return null;
                               },
                             ),

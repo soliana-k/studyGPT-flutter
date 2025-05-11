@@ -6,7 +6,7 @@ import 'package:studygpt1/challenges.dart';
 import 'package:studygpt1/chatbot.dart';
 import 'package:studygpt1/schedules.dart';
 import 'package:studygpt1/todo.dart';
-import 'package:studygpt1/quiz.dart';
+import 'package:studygpt1/quiz_home.dart';
 import 'login_screen.dart';
 import 'slt.dart';
 import 'home.dart';
@@ -20,7 +20,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // Temporary reset for testing (remove after confirming the flow)
+
   final prefs = await SharedPreferences.getInstance();
   await prefs.setBool('loggedIn', false);
   runApp(StudyGPTApp());
@@ -237,7 +237,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => Quiz())); // Updated to use QuizScreen from quiz.dart
+                    MaterialPageRoute(builder: (context) => QuizHome()));
               },
             ),
             Divider(),

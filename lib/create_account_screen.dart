@@ -81,6 +81,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
 
   Future<void> _registerUser() async {
     if (_formKey.currentState!.validate()) {
+      if (_selectedGrade == null) {
+        _showToast("Please select a grade", Colors.red);
+        return;
+      }
+
       setState(() => _isLoading = true);
 
       try {
@@ -93,35 +98,42 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
             'username': _fullNameController.text,
             'email': _emailController.text,
             'password': _passwordController.text,
-            'grade': _selectedGrade ?? '',
+            'confirm_password': _confirmPasswordController.text,
+            'grade': _selectedGrade!,
           }),
-        );
+        ).timeout(const Duration(seconds: 10));
 
-        if (response.statusCode == 201) {
-
+        if (response.statusCode == 201 || response.statusCode == 200) {
           _showToast("Account created successfully!", Colors.green);
           Navigator.pop(context);
         } else {
-
           final errorData = jsonDecode(response.body);
           String errorMessage = 'Registration failed. Please try again.';
 
-          if (errorData.containsKey('detail')) {
-            errorMessage = errorData['detail'];
-          } else if (errorData.containsKey('email')) {
-            errorMessage = 'Email: ${errorData['email'][0]}';
-          } else if (errorData.containsKey('username')) {
-            errorMessage = 'Username: ${errorData['username'][0]}';
-          } else if (errorData.containsKey('password')) {
-            errorMessage = 'Password: ${errorData['password'][0]}';
-          } else if (errorData.containsKey('grade')) {
-            errorMessage = 'Grade: ${errorData['grade'][0]}';
+          if (errorData is Map<String, dynamic>) {
+            if (errorData.containsKey('detail')) {
+              errorMessage = errorData['detail'];
+            } else if (errorData.containsKey('email')) {
+              errorMessage = 'Email: ${errorData['email'][0]}';
+            } else if (errorData.containsKey('username')) {
+              errorMessage = 'Username: ${errorData['username'][0]}';
+            } else if (errorData.containsKey('password')) {
+              errorMessage = 'Password: ${errorData['password'][0]}';
+            } else if (errorData.containsKey('confirm_password')) {
+              errorMessage = 'Confirm Password: ${errorData['confirm_password'][0]}';
+            } else if (errorData.containsKey('grade')) {
+              errorMessage = 'Grade: ${errorData['grade'][0]}';
+            } else {
+              errorMessage = errorData.toString();
+            }
+          } else {
+            errorMessage = 'Unexpected error: ${response.body}';
           }
 
           _showToast(errorMessage, Colors.red);
         }
       } catch (e) {
-        _showToast("Network error: Please check your connection", Colors.red);
+        _showToast("Error: ${e.toString()}. Please check your connection.", Colors.red);
       } finally {
         setState(() => _isLoading = false);
       }
@@ -131,7 +143,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
   void _showToast(String message, Color backgroundColor) {
     Fluttertoast.showToast(
       msg: message,
-      toastLength: Toast.LENGTH_SHORT,
+      toastLength: Toast.LENGTH_LONG,
       gravity: ToastGravity.BOTTOM,
       backgroundColor: backgroundColor,
       textColor: Colors.white,
@@ -280,8 +292,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
                           _buildConfirmPasswordField(),
                           const SizedBox(height: 30),
                           _isLoading
-                              ? CircularProgressIndicator()
-                              : MouseRegion(
+                              ? CircularProgressIndicator() :
+                          MouseRegion(
                             onEnter: _onEnterButton,
                             onExit: _onExitButton,
                             child: GestureDetector(
