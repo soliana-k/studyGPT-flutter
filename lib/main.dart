@@ -67,6 +67,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
   String studyTipTitle = "Loading...";
   String studyTipDescription = "";
   double pdfReadingProgress = 0.0;
+  String username = '';
 
   final CollectionReference studyTipsCollection =
   FirebaseFirestore.instance.collection('study_tips');
@@ -118,6 +119,17 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     });
     await _fetchStudyTips();
   }
+  void loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? email = prefs.getString('username');
+    if (email != null) {
+      final name = email.split('@')[0];
+      setState(() {
+        username = name[0].toUpperCase() + name.substring(1); // Capitalize
+      });
+    }
+  }
+
 
   Future<void> _loadReadingProgress() async {
     final prefs = await SharedPreferences.getInstance();
@@ -139,6 +151,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     _fetchStudyTips();
     _loadReadingProgress();
     _checkForSchedule();
+    loadUsername();
   }
 
   @override
@@ -270,7 +283,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Welcome, Kal',
+                    Text('Welcome, $username!',
                         style: TextStyle(
                             fontSize: 22, fontWeight: FontWeight.bold)),
                     SizedBox(height: 10),

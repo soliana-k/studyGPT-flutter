@@ -124,12 +124,16 @@ class _LoginScreenState extends State<LoginScreen>
         ).timeout(const Duration(seconds: 15)); // Added timeout
 
         print('Login response: ${response.statusCode} - ${response.body}');
-
+        final email = _emailController.text.trim();
         if (response.statusCode == 200) {
           final responseData = jsonDecode(response.body);
 
           final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('username', email);
           await prefs.setBool('loggedIn', true);
+          print('User logged in as: $email');
+
+
           if (responseData['token'] != null) {
             await prefs.setString('authToken', responseData['token']);
           }
