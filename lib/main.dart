@@ -6,6 +6,8 @@ import 'package:studygpt1/challenges.dart';
 import 'package:studygpt1/chatbot.dart';
 import 'package:studygpt1/schedules.dart';
 import 'package:studygpt1/todo.dart';
+import 'package:studygpt1/quiz_home.dart';
+import 'login_screen.dart';
 import 'slt.dart';
 import 'home.dart';
 import 'firebase_options.dart';
@@ -18,15 +20,37 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('loggedIn', false);
   runApp(StudyGPTApp());
 }
 
 class StudyGPTApp extends StatelessWidget {
+  Future<bool> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('loggedIn') ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: StudyGPTHome(),
+      home: FutureBuilder<bool>(
+        future: _checkLoginStatus(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError) {
+            return LoginScreen();
+          }
+          final isLoggedIn = snapshot.data ?? false;
+          return isLoggedIn ? StudyGPTHome() : LoginScreen();
+        },
+      ),
     );
   }
 }
@@ -44,9 +68,9 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
   String studyTipDescription = "";
   double pdfReadingProgress = 0.0;
 
-
   final CollectionReference studyTipsCollection =
   FirebaseFirestore.instance.collection('study_tips');
+
   Future<bool> hasSchedule() async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -60,15 +84,11 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     }
   }
 
-
-
-
   Future<void> _fetchStudyTips() async {
     try {
       QuerySnapshot snapshot = await studyTipsCollection.limit(10).get();
       if (snapshot.docs.isNotEmpty) {
-        final randomTip = (snapshot.docs.toList()
-          ..shuffle()).first;
+        final randomTip = (snapshot.docs.toList()..shuffle()).first;
         setState(() {
           studyTipTitle = randomTip['title'] ?? "No title";
           studyTipDescription = randomTip['content'] ?? "No description.";
@@ -91,7 +111,6 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     }
   }
 
-
   Future<void> _refresh() async {
     setState(() {
       studyTip = "Refreshing tip...";
@@ -99,12 +118,14 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     });
     await _fetchStudyTips();
   }
+
   Future<void> _loadReadingProgress() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       pdfReadingProgress = prefs.getDouble('reading_progress') ?? 0.0;
     });
   }
+
   Future<void> _checkForSchedule() async {
     bool scheduleExists = await hasSchedule();
     setState(() {
@@ -135,8 +156,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               color: Colors.black);
         }),
         title: Text('StudyGPT',
-            style:
-            TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
           Icon(Icons.notification_add, color: Colors.black),
@@ -147,38 +167,88 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
       ),
       drawer: Drawer(
         child: ListView(
+          padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
               decoration: BoxDecoration(color: Colors.teal.shade600),
-              child: Text('Menu',
-                  style: TextStyle(color: Colors.white, fontSize: 24)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text('Menu',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
+                  Text('StudyGPT App',
+                      style: TextStyle(color: Colors.white70, fontSize: 14)),
+                ],
+              ),
             ),
             ListTile(
-              title: Text('Home'),
+              leading: Icon(Icons.home, color: Colors.teal.shade700),
+              title: Text('Home', style: TextStyle(fontWeight: FontWeight.w500)),
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen()));
+                Navigator.pop(context);
+                Navigator.pushReplacement(context,
+                    MaterialPageRoute(builder: (context) => StudyGPTHome()));
               },
             ),
             ListTile(
-              title: Text('PDF'),
+              leading: Icon(Icons.chat, color: Colors.teal.shade700),
+              title: Text('Chat', style: TextStyle(fontWeight: FontWeight.w500)),
               onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => ChatScreen()));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.picture_as_pdf, color: Colors.teal.shade700),
+              title: Text('PDF Reader', style: TextStyle(fontWeight: FontWeight.w500)),
+              onTap: () {
+                Navigator.pop(context);
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => PDFReaderPage()));
               },
             ),
             ListTile(
-              title: Text('To-Do List'),
+              leading: Icon(Icons.checklist, color: Colors.teal.shade700),
+              title: Text('To-Do List', style: TextStyle(fontWeight: FontWeight.w500)),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => TodoApp()));
               },
             ),
-
             ListTile(
-              title: Text('Schedules'),
+              leading: Icon(Icons.calendar_today, color: Colors.teal.shade700),
+              title: Text('Schedules', style: TextStyle(fontWeight: FontWeight.w500)),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => ScheduleScreen()));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.quiz, color: Colors.teal.shade700),
+              title: Text('Quiz', style: TextStyle(fontWeight: FontWeight.w500)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => QuizHome()));
+              },
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.exit_to_app, color: Colors.grey),
+              title: Text('Logout', style: TextStyle(color: Colors.grey)),
+              onTap: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('loggedIn', false);
+                Navigator.pushReplacement(context,
+                    MaterialPageRoute(builder: (context) => LoginScreen()));
               },
             ),
           ],
@@ -187,79 +257,69 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
       body: FutureBuilder<bool>(
           future: hasSchedule(),
           builder: (context, snapshot) {
-    if (!snapshot.hasData) {
-    return Center(child: CircularProgressIndicator());
-    }
+            if (!snapshot.hasData) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-    final scheduleExists = snapshot.data!;
-    return RefreshIndicator(
-    onRefresh: _refresh,
-    child: SingleChildScrollView(
-    physics: AlwaysScrollableScrollPhysics(),
-    padding: EdgeInsets.all(16.0),
-
-    child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    Text('Welcome, Kal',
-    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-    SizedBox(height: 10),
-    if (showScheduleCard)
-    ScheduleCard(
-    onDismiss: () {
-    setState(() {
-    showScheduleCard = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Text('Schedule dismissed'),
-    action: SnackBarAction(
-    label: 'Undo',
-    onPressed: () {
-    setState(() {
-    showScheduleCard = true;
-    });
-    },
-    ),
-    ));
-    },
-    ),
-    SizedBox(height: 20),
-    Text("Let's start Learning!",
-    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    SizedBox(height: 10),
-    _buildLearningCards(),
-    SizedBox(height: 20),
-    Text("Academic Planners",
-    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    SizedBox(height: 10),
-    _buildPlannerCards(),
-    SizedBox(height: 20),
-    _buildTipOfTheDay(),
-    SizedBox(height: 20),
-      Text("Ask StudyGPT 📚",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      SizedBox(height: 10),
-      _buildChatbotTeaserCards(context),
-    SizedBox(height: 20,),
-    Text("Daily Challenges 🏆",
-    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    SizedBox(height: 10),
-
-
-      SizedBox(height: 20),
-
-      TriviaScreen(),
-    ],
-    ),
-    ),
-    );
-    }
-    ),
+            final scheduleExists = snapshot.data!;
+            return RefreshIndicator(
+              onRefresh: _refresh,
+              child: SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Welcome, Kal',
+                        style: TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    if (showScheduleCard)
+                      ScheduleCard(
+                        onDismiss: () {
+                          setState(() {
+                            showScheduleCard = false;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('Schedule dismissed'),
+                            action: SnackBarAction(
+                              label: 'Undo',
+                              onPressed: () {
+                                setState(() {
+                                  showScheduleCard = true;
+                                });
+                              },
+                            ),
+                          ));
+                        },
+                      ),
+                    SizedBox(height: 20),
+                    Text("Let's start Learning!",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    _buildLearningCards(),
+                    SizedBox(height: 20),
+                    Text("Academic Planners",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    _buildPlannerCards(),
+                    SizedBox(height: 20),
+                    _buildTipOfTheDay(),
+                    SizedBox(height: 20),
+                    Text("Daily Challenges 🏆",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    TriviaScreen(),
+                  ],
+                ),
+              ),
+            );
+          }),
     );
   }
-
-
-
 
   Widget _buildLearningCards() {
     List<Map<String, dynamic>> subjects = [
@@ -294,7 +354,8 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               if (result == true) {
                 final prefs = await SharedPreferences.getInstance();
                 setState(() {
-                  pdfReadingProgress = prefs.getDouble('reading_progress') ?? 0.0;
+                  pdfReadingProgress =
+                      prefs.getDouble('reading_progress') ?? 0.0;
                 });
               }
             },
@@ -303,9 +364,8 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               pdfReadingProgress > 0
                   ? "${pdfReadingProgress.round()}% Completed"
                   : "Loading...",
-              // Updated dynamically
               subject["icon"],
-              (pdfReadingProgress / 100).clamp(0.0, 1.0), // Updated dynamically
+              (pdfReadingProgress / 100).clamp(0.0, 1.0),
               subject["color"],
             ),
           );
@@ -314,28 +374,35 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     );
   }
 
-
-  Widget _buildLearningCard(String title, String progress, String icon,
-      double percent, Color col) {
+  Widget _buildLearningCard(
+      String title, String progress, String icon, double percent, Color col) {
     return Container(
       width: 150,
       height: 160,
+      margin: EdgeInsets.only(right: 10),
       child: Card(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            CircularPercentIndicator(
-              radius: 40.0,
-              lineWidth: 5.0,
-              percent: percent,
-              center: SvgPicture.asset(icon, width: 40, height: 40),
-              progressColor: col,
-            ),
-            SizedBox(height: 5),
-            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 5),
-            Text(progress, style: TextStyle(color: Colors.black54)),
-          ],
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              CircularPercentIndicator(
+                radius: 40.0,
+                lineWidth: 5.0,
+                percent: percent,
+                center: SvgPicture.asset(icon, width: 40, height: 40),
+                progressColor: col,
+              ),
+              SizedBox(height: 5),
+              Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 5),
+              Text(progress, style: TextStyle(color: Colors.black54)),
+            ],
+          ),
         ),
       ),
     );
@@ -347,6 +414,7 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
       child: Row(
         children: [
           _buildPlannerCard('assets/icons/todo.svg', 'To-Do List'),
+          SizedBox(width: 10),
           _buildPlannerCard('assets/icons/schedule.svg', 'Schedule'),
         ],
       ),
@@ -359,26 +427,33 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
         if (title == 'To-Do List') {
           Navigator.push(context, MaterialPageRoute(builder: (_) => TodoApp()));
         } else if (title == 'Schedule') {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => ScheduleScreen()));
+          Navigator.push(
+              context, MaterialPageRoute(builder: (_) => ScheduleScreen()));
         }
       },
       child: Container(
         width: 150,
         height: 160,
         child: Card(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(iconPath, width: 60, height: 60),
-              SizedBox(height: 10),
-              Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-            ],
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(iconPath, width: 60, height: 60),
+                SizedBox(height: 16),
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-
 
   Widget _buildTipOfTheDay() {
     return Card(
@@ -390,7 +465,6 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -409,8 +483,6 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               ],
             ),
             SizedBox(height: 10),
-
-            // Tip Content
             isLoading
                 ? Row(
               children: [
@@ -446,52 +518,3 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     );
   }
 }
-Widget _buildChatbotTeaserCards(BuildContext context) {
-  List<Map<String, String>> prompts = [
-    {'icon': 'assets/icons/qa.svg', 'text': 'Need help with a concept?'},
-    {'icon': 'assets/icons/help.svg', 'text': 'Ask me anything!'},
-    {'icon': 'assets/icons/idea.svg', 'text': 'Stuck on a problem?'},
-  ];
-
-  return SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Row(
-      children: prompts.map((prompt) {
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ChatScreen()),
-            );
-          },
-          child: Container(
-            width: 150,
-            height: 160,
-            margin: EdgeInsets.only(right: 10),
-            child: Card(
-              color: Colors.deepPurple[50],
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: EdgeInsets.all(12),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset(prompt['icon']!, width: 50, height: 50),
-                    SizedBox(height: 10),
-                    Text(
-                      prompt['text']!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    ),
-  );
-}
-
-
