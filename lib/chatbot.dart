@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
@@ -41,9 +44,26 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<String> sendToLLMBackend(String message) async {
-    // TODO: Replace this with actual API
-    await Future.delayed(const Duration(seconds: 2)); // Simulated delay
-    return "This is a sample response to: \"$message\"";
+    final url = Uri.parse('http://56.228.80.139/api/chatbot/messages/create/'); // Your API endpoint
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'message': message}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['response'] != null) {
+        return data['response'];
+      } else {
+        throw Exception('Malformed response');
+      }
+    } else {
+      throw Exception('Failed to connect: ${response.statusCode}');
+    }
   }
 
   @override

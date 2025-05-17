@@ -236,10 +236,19 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     SizedBox(height: 20),
     _buildTipOfTheDay(),
     SizedBox(height: 20),
+      Text("Ask StudyGPT 📚",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      SizedBox(height: 10),
+      _buildChatbotTeaserCards(context),
+    SizedBox(height: 20,),
     Text("Daily Challenges 🏆",
     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     SizedBox(height: 10),
-    TriviaScreen(),
+
+
+      SizedBox(height: 20),
+
+      TriviaScreen(),
     ],
     ),
     ),
@@ -437,4 +446,52 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
     );
   }
 }
+Widget _buildChatbotTeaserCards(BuildContext context) {
+  List<Map<String, String>> prompts = [
+    {'icon': 'assets/icons/qa.svg', 'text': 'Need help with a concept?'},
+    {'icon': 'assets/icons/help.svg', 'text': 'Ask me anything!'},
+    {'icon': 'assets/icons/idea.svg', 'text': 'Stuck on a problem?'},
+  ];
+
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: prompts.map((prompt) {
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ChatScreen()),
+            );
+          },
+          child: Container(
+            width: 150,
+            height: 160,
+            margin: EdgeInsets.only(right: 10),
+            child: Card(
+              color: Colors.deepPurple[50],
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(prompt['icon']!, width: 50, height: 50),
+                    SizedBox(height: 10),
+                    Text(
+                      prompt['text']!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    ),
+  );
+}
+
 
