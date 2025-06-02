@@ -132,16 +132,27 @@ class _LoginScreenState extends State<LoginScreen>
           await prefs.setString('username', email);
           await prefs.setBool('loggedIn', true);
           print('User logged in as: $email');
+          final token=responseData['tokens']['access'];
+          final refresh=responseData['tokens']['refresh'];
 
 
           if (responseData['token'] != null) {
-            await prefs.setString('authToken', responseData['token']);
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('authToken', token);
+            await prefs.setString('refreshToken', refresh);
+
           }
           if (responseData['user'] != null) {
             await prefs.setString('userData', jsonEncode(responseData['user']));
           }
 
           _showToast("Login successful!", Colors.green);
+          print("Token saved: $token");
+          print("Login response body: ${response.body}");
+
+          await prefs.setString('authToken', token);
+
+
 
           Navigator.pushReplacement(
             context,
