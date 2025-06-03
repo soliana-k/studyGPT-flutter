@@ -457,7 +457,8 @@ class _ToDoScreenState extends State<TodoApp> {
     final completedTasks = _tasks.where((t) => t['completed']).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My To-Do List')),
+      appBar: AppBar(title: const Text('My To-Do List'),
+      backgroundColor: Colors.teal,),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

@@ -382,7 +382,7 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
          return false; // Prevent default pop (since we manually popped)
        },
       child: Scaffold(
-      backgroundColor: const Color(0xFFF86363),
+      backgroundColor:Colors.teal,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -483,7 +483,7 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
       )
           : const Center(child: CircularProgressIndicator()),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.teal,
         child: const Icon(Icons.chat),
         onPressed: () {
       showModalBottomSheet(

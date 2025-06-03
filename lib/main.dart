@@ -14,6 +14,7 @@ import 'firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'notifications.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -172,7 +173,12 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
             style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
-          Icon(Icons.notification_add, color: Colors.black),
+          IconButton(icon:Icon(Icons.notification_add), color: Colors.black,
+            onPressed: () {
+        Navigator.push(context,
+        MaterialPageRoute(builder: (context) => NotificationsPage()));
+  },
+          ),
           SizedBox(width: 10),
           Icon(Icons.account_circle, color: Colors.black),
           SizedBox(width: 10),
