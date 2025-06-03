@@ -27,18 +27,29 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
   List<Map<String, dynamic>> chapters = [];
   String? selectedVoiceName;
   double _speechRate = 0.5;
+  String? userEmail;
+
 
 
   @override
   void initState() {
     super.initState();
-    loadPDF();
-    _loadBookmarks();
-    _loadTtsSettings();
+    _loadUserEmail();
+    // loadPDF();
+    // _loadBookmarks();
+    // _loadTtsSettings();
+
+  }
+  Future<void> _loadUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    userEmail = prefs.getString('username');
+    await loadPDF();
+    await _loadBookmarks();
+    await _loadTtsSettings();
   }
   Future<void> _loadBookmarks() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedBookmarks = prefs.getStringList('bookmarked_pages') ?? [];
+    final savedBookmarks = prefs.getStringList('bookmarked_pages_${userEmail ?? "default"}') ?? [];
     setState(() {
       bookmarkedPages = savedBookmarks.map((e) => int.tryParse(e) ?? 0).toSet();
     });
@@ -46,7 +57,7 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
 
   Future<void> _saveBookmarks() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('bookmarked_pages', bookmarkedPages.map((e) => e.toString()).toList());
+    await prefs.setStringList('bookmarked_pages_${userEmail ?? "default"}', bookmarkedPages.map((e) => e.toString()).toList());
   }
 
 
@@ -66,7 +77,7 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
   }
   Future<void> _loadLastPage() async {
     final prefs = await SharedPreferences.getInstance();
-    final lastPage = prefs.getInt('last_page') ?? 1;
+    final lastPage = prefs.getInt('last_page_${userEmail ?? "default"}') ?? 1;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _pdfViewerController.jumpToPage(lastPage);
@@ -126,7 +137,7 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
   }
   void _saveLastReadPage(int page) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('last_read_page', page);
+    await prefs.setInt('last_page_${userEmail ?? "default"}', page);
   }
 
 
@@ -371,7 +382,7 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
          return false; // Prevent default pop (since we manually popped)
        },
       child: Scaffold(
-      backgroundColor: const Color(0xFFF86363),
+      backgroundColor:Colors.teal,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -472,7 +483,7 @@ class _PDFReaderPageState extends State<PDFReaderPage> {
       )
           : const Center(child: CircularProgressIndicator()),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.teal,
         child: const Icon(Icons.chat),
         onPressed: () {
       showModalBottomSheet(

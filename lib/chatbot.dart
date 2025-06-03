@@ -1,146 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:http/http.dart' as http;
-// import 'dart:convert';
-//
-//
-// class ChatScreen extends StatefulWidget {
-//   const ChatScreen({Key? key}) : super(key: key);
-//
-//   @override
-//   State<ChatScreen> createState() => _ChatScreenState();
-// }
-//
-// class _ChatScreenState extends State<ChatScreen> {
-//   final List<Map<String, String>> _messages = []; // {'role': 'user' or 'bot', 'text': ''}
-//   final TextEditingController _controller = TextEditingController();
-//   bool _isLoading = false;
-//
-//   void _sendMessage() async {
-//     final inputText = _controller.text.trim();
-//     if (inputText.isEmpty || _isLoading) return;
-//
-//     setState(() {
-//       _messages.add({'role': 'user', 'text': inputText});
-//       _controller.clear();
-//       _isLoading = true;
-//     });
-//
-//     try {
-//       // TODO: Replace with API
-//       final responseText = await sendToLLMBackend(inputText);
-//
-//       setState(() {
-//         _messages.add({'role': 'bot', 'text': responseText});
-//       });
-//     } catch (e) {
-//       setState(() {
-//         _messages.add({'role': 'bot', 'text': 'Error: Could not fetch response.'});
-//       });
-//     } finally {
-//       setState(() {
-//         _isLoading = false;
-//       });
-//     }
-//   }
-//
-//   Future<String> sendToLLMBackend(String message) async {
-//     final url = Uri.parse('http://56.228.80.139/api/chatbot/messages/create/'); // Your API endpoint
-//
-//     final response = await http.post(
-//       url,
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: jsonEncode({'message': message}),
-//     );
-//
-//     if (response.statusCode == 200) {
-//       final data = jsonDecode(response.body);
-//       if (data['response'] != null) {
-//         return data['response'];
-//       } else {
-//         throw Exception('Malformed response');
-//       }
-//     } else {
-//       throw Exception('Failed to connect: ${response.statusCode}');
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('StudyGPT AI Chat'),
-//         backgroundColor: Colors.teal.shade600,
-//       ),
-//       body: Column(
-//         children: [
-//           Expanded(
-//             child: ListView.builder(
-//               padding: const EdgeInsets.all(12),
-//               reverse: true,
-//               itemCount: _messages.length,
-//               itemBuilder: (context, index) {
-//                 final msg = _messages[_messages.length - 1 - index];
-//                 final isUser = msg['role'] == 'user';
-//                 return Align(
-//                   alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-//                   child: Container(
-//                     margin: const EdgeInsets.symmetric(vertical: 4),
-//                     padding: const EdgeInsets.all(12),
-//                     constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-//                     decoration: BoxDecoration(
-//                       color: isUser ? Colors.teal.shade100 : Colors.grey.shade200,
-//                       borderRadius: BorderRadius.circular(16),
-//                     ),
-//                     child: Text(msg['text']!, style: const TextStyle(fontSize: 15)),
-//                   ),
-//                 );
-//               },
-//             ),
-//           ),
-//           if (_isLoading)
-//             const Padding(
-//               padding: EdgeInsets.all(8),
-//               child: CircularProgressIndicator(),
-//             ),
-//           Padding(
-//             padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-//             child: Row(
-//               children: [
-//                 Expanded(
-//                   child: TextField(
-//                     controller: _controller,
-//                     textInputAction: TextInputAction.send,
-//                     onSubmitted: (_) => _sendMessage(),
-//                     decoration: InputDecoration(
-//                       hintText: 'Ask something...',
-//                       filled: true,
-//                       fillColor: Colors.grey.shade100,
-//                       border: OutlineInputBorder(
-//                         borderRadius: BorderRadius.circular(24),
-//                         borderSide: BorderSide.none,
-//                       ),
-//                       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-//                     ),
-//                   ),
-//                 ),
-//                 const SizedBox(width: 8),
-//                 IconButton(
-//                   onPressed: _sendMessage,
-//                   icon: const Icon(Icons.send_rounded),
-//                   color: Colors.teal,
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -156,96 +13,42 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
-
+  final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
-  @override
-  void initState() {
-    super.initState();
-    loadPreviousConversations();
-  }
-
 
   Future<bool> refreshAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     final refreshToken = prefs.getString('refreshToken');
 
-    if (refreshToken == null) {
-      print("Refresh token not found");
-      return false;
-    }
-
-    final url = Uri.parse('http://56.228.80.139/api/token/refresh/');
+    if (refreshToken == null) return false;
 
     final response = await http.post(
-      url,
+      Uri.parse('http://56.228.80.139/api/token/refresh/'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'refresh': refreshToken}),
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final newAccessToken = data['access'];
+      final newAccessToken = jsonDecode(response.body)['access'];
       await prefs.setString('authToken', newAccessToken);
-      print("✅ Access token refreshed");
       return true;
-    } else {
-      print("❌ Failed to refresh token: ${response.body}");
-      return false;
     }
-  }
-  Future<void> loadPreviousConversations() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('authToken');
-
-    if (token == null) return;
-
-    final url = Uri.parse('http://56.228.80.139/api/chatbot/messages/6');
-
-    http.Response response = await http.get(
-      url,
-      headers: {'Authorization': 'Bearer $token'},
-    );
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      print("🔁 Raw response: ${response.body}");
-
-      final List<dynamic> messages = data['messages'];
-
-      setState(() {
-        _messages.clear();
-
-        for (var msg in messages) {
-          _messages.add({
-            'role': msg['sender'],   // either 'user' or 'ai'
-            'content': msg['content'],
-          });
-        }
-      });
-    } else {
-      print("❌ Failed to load chats: ${response.statusCode}");
-    }
+    return false;
   }
 
   Future<String?> sendMessageToBot(String message) async {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('authToken');
-
     if (token == null) return null;
-
-    final url = Uri.parse('http://56.228.80.139/api/chatbot/messages/create/');
 
     Future<http.Response> _sendRequest(String token) {
       return http.post(
-        url,
+        Uri.parse('http://56.228.80.139/api/chatbot/messages/create/'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'content': message,
-          'chat_model_id': 2, // Always use chatbot 2
-        }),
+        body: jsonEncode({'content': message, 'chat_model_id': 2}),
       );
     }
 
@@ -253,10 +56,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (response.statusCode == 201) {
       final data = jsonDecode(response.body);
-
       return data['messages']['ai']['content'];
     } else if (response.statusCode == 401) {
-      print("⚠️ Token expired, trying to refresh...");
       final refreshed = await refreshAccessToken();
       if (refreshed) {
         token = prefs.getString('authToken');
@@ -266,8 +67,6 @@ class _ChatScreenState extends State<ChatScreen> {
           return data['messages']['ai']['content'];
         }
       }
-    } else {
-      print("❌ API Error: ${response.statusCode} => ${response.body}");
     }
 
     return null;
@@ -283,31 +82,82 @@ class _ChatScreenState extends State<ChatScreen> {
       _controller.clear();
     });
 
+    _scrollToBottom();
+
     final botResponse = await sendMessageToBot(text);
 
     setState(() {
-      if (botResponse != null) {
-        _messages.add({"role": "bot", "content": botResponse});
-      } else {
-        _messages.add({"role": "bot", "content": "Failed to get response. Try again."});
-      }
+      _messages.add({
+        "role": "bot",
+        "content": botResponse ?? "❌ Failed to get response. Try again."
+      });
       _isLoading = false;
+    });
+
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 100,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
   Widget _buildMessage(Map<String, dynamic> msg) {
     final isUser = msg['role'] == 'user';
+    final content = msg['content'] ?? '';
+
+    final regex = RegExp(r"\*\*(.*?)\*\*");
+    final spans = <TextSpan>[];
+    int start = 0;
+
+    for (final match in regex.allMatches(content)) {
+      if (match.start > start) {
+        spans.add(TextSpan(text: content.substring(start, match.start)));
+      }
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ));
+      start = match.end;
+    }
+
+    if (start < content.length) {
+      spans.add(TextSpan(text: content.substring(start)));
+    }
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-        padding: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(maxWidth: 300),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
-          color: isUser ? Colors.blue[100] : Colors.grey[300],
-          borderRadius: BorderRadius.circular(12),
+          color: isUser ? const Color(0xFFD0EBFF) : const Color(0xFFF1F3F5),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(14),
+            topRight: const Radius.circular(14),
+            bottomLeft: Radius.circular(isUser ? 14 : 0),
+            bottomRight: Radius.circular(isUser ? 0 : 14),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(1, 2),
+            )
+          ],
         ),
-        child: Text(msg['content'] ?? '[No message content]'),
-
+        child: Text.rich(
+          TextSpan(children: spans),
+          style: const TextStyle(fontSize: 15.5, height: 1.4),
+        ),
       ),
     );
   }
@@ -315,13 +165,18 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("StudyGPT Chat")),
+      appBar: AppBar(
+        title: const Text("💬 StudyGPT Chat"),
+        elevation: 0,
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+      ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
-              reverse: false,
-              padding: const EdgeInsets.all(8),
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 return _buildMessage(_messages[index]);
@@ -330,28 +185,37 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           if (_isLoading)
             const Padding(
-              padding: EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(10),
               child: CircularProgressIndicator(),
             ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: "Type your message...",
-                      border: OutlineInputBorder(),
+          SafeArea(
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(10, 6, 10, 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      decoration: const InputDecoration(
+                        hintText: "Ask something...",
+                        border: InputBorder.none,
+                      ),
+                      minLines: 1,
+                      maxLines: 4,
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _sendMessage,
-                )
-              ],
+                  IconButton(
+                    icon: const Icon(Icons.send, color: Colors.teal),
+                    onPressed: _sendMessage,
+                  )
+                ],
+              ),
             ),
           ),
         ],
