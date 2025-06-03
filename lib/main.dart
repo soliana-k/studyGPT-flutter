@@ -6,7 +6,9 @@ import 'package:studygpt1/challenges.dart';
 import 'package:studygpt1/chatbot.dart';
 import 'package:studygpt1/schedules.dart';
 import 'package:studygpt1/todo.dart';
-import 'package:studygpt1/quiz_home.dart';
+import 'package:studygpt1/quiz.dart';
+import 'package:studygpt1/setting_screen.dart';
+import 'package:studygpt1/analytics_page.dart';
 import 'login_screen.dart';
 import 'slt.dart';
 import 'home.dart';
@@ -250,7 +252,25 @@ class _StudyGPTHomeState extends State<StudyGPTHome> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => QuizHome()));
+                    MaterialPageRoute(builder: (context) => Quiz()));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.analytics, color: Colors.teal.shade700), // Analytics added above Settings
+              title: Text('Analytics', style: TextStyle(fontWeight: FontWeight.w500)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => AnalyticsPage()));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.settings, color: Colors.teal.shade700),
+              title: Text('Settings', style: TextStyle(fontWeight: FontWeight.w500)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => SettingsScreen()));
               },
             ),
             Divider(),
